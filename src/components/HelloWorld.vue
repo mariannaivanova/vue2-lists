@@ -2,7 +2,7 @@
   <div class="hello">
     <h2> 🌒🌓🌔🌕🌖🌗🌘</h2>
     <ul>
-      <li v-for="(name, index) in buttons_names" :key="name">
+      <li v-for="(name, index) in buttonsNames" :key="name">
         <button @click=toggleList(index)>
           {{ name }}
         </button>
@@ -18,26 +18,29 @@
 export default {
   name: 'HelloWorld',
   props: {
-    buttons_names: {
-      type: Array,
-      required: true,
-      default: () => []
-    },
-    items: {
-      type: Array,
-      required: true,
-      default: () => []
-    }
+
+    buttonsNames: { type: Array, required: true, default: () => [] },
+
+    items: { type: Array, required: true, default: () => [] }
+
   },
+
   data() {
     return {
       isOpenList: []
     }
   },
-  created() {
-    this.isOpenList = this.buttons_names.map(() => false);
-  },
+
   methods: {
+
+    initOpenList() {
+      this.isOpenList = this.buttonsNames.map(() => false);
+    },
+
+    created() {
+      this.initOpenList();
+    },
+
     toggleList(index) {
       this.isOpenList = this.isOpenList.map((val, i) =>
           i === index ? !val : val
@@ -45,6 +48,7 @@ export default {
     }
   }
 }
+
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
@@ -70,7 +74,6 @@ ul {
   padding: 0;
 }
 li {
-  //display: inline-block;
   margin: 0 10px;
   padding: 10px 0;
 }
