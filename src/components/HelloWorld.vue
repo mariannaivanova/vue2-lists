@@ -19,10 +19,17 @@ export default {
   name: 'HelloWorld',
   props: {
 
-    buttonsNames: { type: Array, required: true, default: () => [] },
+    buttonsNames: {
+      type: Array,
+      required: true,
+      default: () => []
+    },
 
-    items: { type: Array, required: true, default: () => [] }
-
+    items: {
+      type: Array,
+      required: true,
+      default: () => []
+    }
   },
 
   data() {
@@ -31,14 +38,13 @@ export default {
     }
   },
 
-  methods: {
+  created() {
+    this.initOpenList();
+  },
 
+  methods: {
     initOpenList() {
       this.isOpenList = this.buttonsNames.map(() => false);
-    },
-
-    created() {
-      this.initOpenList();
     },
 
     toggleList(index) {
