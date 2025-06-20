@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <HelloWorld
-        :buttonsNames="names"
+        :buttons-names="names"
         :items="items"
     />
   </div>
