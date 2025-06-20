@@ -17,7 +17,6 @@
               >
               <label :for="`checkbox-${index}-${itemIndex}`">{{ item }}</label>
             </div>
-
             <div v-if="checkedItems[index][itemIndex]" class="item-options">
               <input
                   type="number"
@@ -28,21 +27,20 @@
                   class="number-input"
                   @change="updateSquareCount(index, itemIndex)"
               >
-
               <div class="color-panel">
                 <input
                     type="color"
                     v-model="itemColors[index][itemIndex]"
                     class="native-color-picker"
                     ref="colorPicker"
-                    @input="updateCommonSquares()"
+                    @input="updateCommonSquares(index)"
                 >
               </div>
             </div>
           </li>
         </ul>
         <div v-show="isOpenList[index]" class="square-box">
-          <div v-for="(row, rowIndex) in commonSquares" :key="rowIndex" class="common-row">
+          <div v-for="(row, rowIndex) in commonSquares[index]" :key="rowIndex" class="common-row">
             <div
                 v-for="(color, colorIndex) in row"
                 :key="colorIndex"
@@ -60,18 +58,21 @@
 <script>
 export default {
   name: 'HelloWorld',
+
   props: {
     buttonsNames: {
       type: Array,
       required: true,
       default: () => []
     },
+
     items: {
       type: Array,
       required: true,
       default: () => []
     }
   },
+
   data() {
     return {
       isOpenList: [],
@@ -82,28 +83,33 @@ export default {
       commonSquares: []
     }
   },
+
   created() {
     this.initOpenList();
     this.initCheckedItems();
     this.initItemColors();
-    this.initItemsSquares();
     this.initSquareCounts();
     this.initCommonSquares();
   },
+
   watch: {
     itemColors: {
       deep: true,
       handler(newVal) {
-        newVal.forEach((list, i) => {
-          list.forEach((color, j) => {
-            if (color && color.startsWith('#')) {
-              this.itemSquares[i][j] = [color, color, color];
+        newVal.forEach((list, listIndex) => {
+          list.forEach((color, itemIndex) => {
+            if (color && this.checkedItems[listIndex][itemIndex]) {
+              this.$set(this.commonSquares[listIndex][itemIndex],
+                  0,
+                  this.itemColors[listIndex][itemIndex]
+              );
             }
           });
         });
       }
     }
   },
+
   methods: {
     initOpenList() {
       this.isOpenList = this.buttonsNames.map(() => false);
@@ -111,12 +117,6 @@ export default {
     initCheckedItems() {
       this.checkedItems = this.buttonsNames.map(() =>
           this.items.map(() => false)
-      );
-
-    },
-    initItemsSquares() {
-      this.itemSquares = this.buttonsNames.map(() =>
-          this.items.map(() => ['#ffffff', '#ffffff', '#ffffff'])
       );
     },
     initItemColors() {
@@ -130,8 +130,14 @@ export default {
       );
     },
     initCommonSquares() {
-      this.commonSquares = this.items.map(() => []);
-      this.updateCommonSquares();
+      this.commonSquares = this.buttonsNames.map((_, listIndex) =>
+          this.items.map((_, itemIndex) =>
+              Array(this.squareCounts[listIndex][itemIndex] || 3).fill('#ffffff')
+          )
+      );
+      this.buttonsNames.forEach((_, index) => {
+        this.updateCommonSquares(index);
+      });
     },
     toggleList(index) {
       this.isOpenList = this.isOpenList.map((val, i) =>
@@ -142,22 +148,26 @@ export default {
       if (!this.checkedItems[index][itemIndex]) {
         this.itemColors[index][itemIndex] = '#ffffff';
       }
+      this.updateCommonSquares(index);
     },
     updateSquareCount(index, itemIndex) {
       this.squareCounts[index][itemIndex] = Math.min(
           10,
           Math.max(1, this.squareCounts[index][itemIndex] || 1)
       );
-      this.updateCommonSquares();
+      this.updateCommonSquares(index);
     },
-    updateCommonSquares() {
-      this.commonSquares = this.items.map((_, itemIndex) => {
-        if (!this.checkedItems[0][itemIndex]) {
-          return Array(this.squareCounts[0][itemIndex] || 3).fill('#ffffff');
-        }
+    updateCommonSquares(index) {
+      this.$nextTick(() => {
+        const newSquares = this.items.map((_, itemIndex) => {
+          if (!this.checkedItems[index][itemIndex]) {
+            return Array(this.squareCounts[index][itemIndex] || 3).fill('#ffffff');
+          }
+          return Array(this.squareCounts[index][itemIndex] || 3)
+              .fill(this.itemColors[index][itemIndex]);
+        });
 
-        const count = this.squareCounts[0][itemIndex] || 3;
-        return Array(count).fill(this.itemColors[0][itemIndex]);
+        this.$set(this.commonSquares, index, newSquares);
       });
     }
   },

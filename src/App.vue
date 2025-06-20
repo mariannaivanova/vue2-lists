@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <HelloWorld
+    <hello-world
         :buttons-names="names"
         :items="items"
     />
@@ -12,11 +12,9 @@ import HelloWorld from './components/HelloWorld.vue'
 
 export default {
   name: 'App',
-
   components: {
     HelloWorld
   },
-
   data() {
     return {
       names: ["list1", "list2"],
