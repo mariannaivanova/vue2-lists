@@ -3,52 +3,62 @@
     <h2> 🌒🌓🌔🌕🌖🌗🌘</h2>
     <ul>
       <li v-for="(name, index) in buttonsNames" :key="name">
-        <button @click="toggleList(index)">
-          {{ name }}
-        </button>
-        <ul v-show="isOpenList[index]" class="nested-list">
-          <li v-for="(item, itemIndex) in items" :key="item" class="item-container">
-            <div class="item-controls">
-              <input
-                  type="checkbox"
-                  :id="`checkbox-${index}-${itemIndex}`"
-                  v-model="checkedItems[index][itemIndex]"
-                  @change="handleCheckboxChange(index, itemIndex)"
-              >
-              <label :for="`checkbox-${index}-${itemIndex}`">{{ item }}</label>
-            </div>
-            <div v-if="checkedItems[index][itemIndex]" class="item-options">
-              <input
-                  type="number"
-                  v-model.number="squareCounts[index][itemIndex]"
-                  placeholder="Кол-во квадратов"
-                  min="1"
-                  max="10"
-                  class="number-input"
-                  @change="updateSquareCount(index, itemIndex)"
-              >
-              <div class="color-panel">
+        <div class="button-controls">
+          <input
+              type="checkbox"
+              :id="`checkbox-${index}`"
+              v-model="checkedButtons[index]"
+              @change="toggleAllItems(index)">
+          <button @click="toggleList(index)">
+            {{ name }}
+          </button>
+          <ul v-show="isOpenList[index]" class="nested-list">
+            <li v-for="(item, itemIndex) in items" :key="item" class="item-container">
+              <div class="item-controls">
                 <input
-                    type="color"
-                    v-model="itemColors[index][itemIndex]"
-                    class="native-color-picker"
-                    ref="colorPicker"
-                    @input="updateCommonSquares(index)"
+                    type="checkbox"
+                    :id="`checkbox-${index}-${itemIndex}`"
+                    v-model="checkedItems[index][itemIndex]">
+                <label :for="`checkbox-${index}-${itemIndex}`">{{ item }}</label>
+              </div>
+              <div v-if="checkedItems[index][itemIndex]" class="item-options">
+                <input
+                    type="number"
+                    v-model.number="squareCounts[index][itemIndex]"
+                    placeholder="Кол-во квадратов"
+                    min="1"
+                    max="10"
+                    class="number-input"
+                    @change="updateSquareCount(index, itemIndex)"
                 >
+                <div class="color-panel">
+                  <input
+                      type="color"
+                      v-model="itemColors[index][itemIndex]"
+                      class="native-color-picker"
+                      ref="colorPicker"
+                  >
+                </div>
+              </div>
+            </li>
+          </ul>
+          <div v-show="isOpenList[index]" class="square-box">
+            <div v-for="(row, rowIndex) in commonSquares[index]" :key="rowIndex" class="common-row">
+              <div
+                  v-for="(color, colorIndex) in row"
+                  :key="colorIndex"
+                  class="common-square"
+                  :style="{ backgroundColor: color }"
+              >
               </div>
             </div>
-          </li>
-        </ul>
-        <div v-show="isOpenList[index]" class="square-box">
-          <div v-for="(row, rowIndex) in commonSquares[index]" :key="rowIndex" class="common-row">
-            <div
-                v-for="(color, colorIndex) in row"
-                :key="colorIndex"
-                class="common-square"
-                :style="{ backgroundColor: color }"
-            >
-            </div>
           </div>
+          <button
+              class="shuffle-button"
+              v-show="isOpenList[index]"
+              @click="mixSquares(index)">
+            {{ isMixed[index] ? 'Unshuffle' : 'Shuffle' }}
+          </button>
         </div>
       </li>
     </ul>
@@ -77,19 +87,25 @@ export default {
     return {
       isOpenList: [],
       checkedItems: [],
+      checkedButtons: [],
       itemColors: [],
       itemSquares: [],
       squareCounts: [],
-      commonSquares: []
+      commonSquares: [],
+      isMixed: [],
+      originalSquares: [],
     }
   },
 
   created() {
     this.initOpenList();
     this.initCheckedItems();
+    this.initCheckedButtons();
     this.initItemColors();
     this.initSquareCounts();
     this.initCommonSquares();
+    this.initIsMixed();
+    this.initOriginalSquares();
   },
 
   watch: {
@@ -99,9 +115,11 @@ export default {
         newVal.forEach((list, listIndex) => {
           list.forEach((color, itemIndex) => {
             if (color && this.checkedItems[listIndex][itemIndex]) {
-              this.$set(this.commonSquares[listIndex][itemIndex],
-                  0,
-                  this.itemColors[listIndex][itemIndex]
+              const count = this.squareCounts[listIndex][itemIndex] || 3;
+              this.$set(
+                  this.commonSquares[listIndex],
+                  itemIndex,
+                  Array(count).fill(color)
               );
             }
           });
@@ -114,6 +132,9 @@ export default {
     initOpenList() {
       this.isOpenList = this.buttonsNames.map(() => false);
     },
+    initCheckedButtons() {
+      this.checkedButtons = this.buttonsNames.map(() => false);
+    },
     initCheckedItems() {
       this.checkedItems = this.buttonsNames.map(() =>
           this.items.map(() => false)
@@ -123,6 +144,9 @@ export default {
       this.itemColors = this.buttonsNames.map(() =>
           this.items.map(() => '#ffffff')
       );
+    },
+    initIsMixed() {
+      this.isMixed = this.buttonsNames.map(() => false);
     },
     initSquareCounts() {
       this.squareCounts = this.buttonsNames.map(() =>
@@ -139,16 +163,19 @@ export default {
         this.updateCommonSquares(index);
       });
     },
+
+    initOriginalSquares() {
+      this.originalSquares = [...this.commonSquares];
+    },
+
     toggleList(index) {
       this.isOpenList = this.isOpenList.map((val, i) =>
           i === index ? !val : val
       );
     },
-    handleCheckboxChange(index, itemIndex) {
-      if (!this.checkedItems[index][itemIndex]) {
-        this.itemColors[index][itemIndex] = '#ffffff';
-      }
-      this.updateCommonSquares(index);
+    toggleAllItems(index) {
+      const isChecked = this.checkedButtons[index];
+      this.checkedItems[index] = this.items.map(() => isChecked);
     },
     updateSquareCount(index, itemIndex) {
       this.squareCounts[index][itemIndex] = Math.min(
@@ -168,7 +195,19 @@ export default {
         });
 
         this.$set(this.commonSquares, index, newSquares);
+        this.$set(this.originalSquares, index, newSquares);
       });
+    },
+    mixSquares(index) {
+      if (!this.isMixed[index]) {
+        if (!this.originalSquares) this.originalSquares = [...this.commonSquares];
+        const mixed = this.commonSquares[index].flat().sort(() => Math.random() - 0.5);
+        this.$set(this.commonSquares, index, [mixed]);
+      } else {
+        this.$set(this.commonSquares, index, [...this.originalSquares[index]]);
+
+      }
+      this.$set(this.isMixed, index, !this.isMixed[index]);
     }
   },
 }
@@ -255,7 +294,7 @@ li {
   display: flex;
   border: 1px solid #ccc;
   border-radius: 4px;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .color-slider label {
@@ -277,4 +316,13 @@ li {
   height: 30px;
   cursor: pointer;
 }
+
+.common-row {
+  transition: all 0.5s ease;
+}
+
+.shuffle-button {
+  margin: 10px;
+}
+
 </style>
