@@ -1,10 +1,10 @@
 <template>
   <div class="hello">
-    <h2> 🌒🌓🌔🌕🌖🌗🌘</h2>
     <ul>
       <li v-for="(name, index) in buttonsNames" :key="name">
         <div class="button-controls">
           <input
+              class="button-input"
               type="checkbox"
               :id="`checkbox-${index}`"
               v-model="checkedButtons[index]"
@@ -12,53 +12,57 @@
           <button @click="toggleList(index)">
             {{ name }}
           </button>
-          <ul v-show="isOpenList[index]" class="nested-list">
-            <li v-for="(item, itemIndex) in items" :key="item" class="item-container">
-              <div class="item-controls">
-                <input
-                    type="checkbox"
-                    :id="`checkbox-${index}-${itemIndex}`"
-                    v-model="checkedItems[index][itemIndex]">
-                <label :for="`checkbox-${index}-${itemIndex}`">{{ item }}</label>
-              </div>
-              <div v-if="checkedItems[index][itemIndex]" class="item-options">
-                <input
-                    type="number"
-                    v-model.number="squareCounts[index][itemIndex]"
-                    placeholder="Кол-во квадратов"
-                    min="1"
-                    max="10"
-                    class="number-input"
-                    @change="updateSquareCount(index, itemIndex)"
-                >
-                <div class="color-panel">
-                  <input
-                      type="color"
-                      v-model="itemColors[index][itemIndex]"
-                      class="native-color-picker"
-                      ref="colorPicker"
+          <Transition>
+            <div :class="{'shown': isOpenList[index]}" class="wrapper">
+              <ul class="nested-list">
+                <li v-for="(item, itemIndex) in items" :key="item" class="item-container">
+                  <div class="item-controls">
+                    <input
+                        type="checkbox"
+                        :id="`checkbox-${index}-${itemIndex}`"
+                        v-model="checkedItems[index][itemIndex]">
+                    <label :for="`checkbox-${index}-${itemIndex}`">{{ item }}</label>
+                  </div>
+                  <div :class="{'shown': checkedItems[index][itemIndex]}"
+                       class="item-options">
+                    <input
+                        type="number"
+                        v-model.number="squareCounts[index][itemIndex]"
+                        placeholder="Кол-во квадратов"
+                        min="1"
+                        max="10"
+                        class="number-input"
+                        @change="updateSquareCount(index, itemIndex)"
+                    >
+                    <div class="color-panel">
+                      <input
+                          type="color"
+                          v-model="itemColors[index][itemIndex]"
+                          class="native-color-picker"
+                          ref="colorPicker"
+                      >
+                    </div>
+                  </div>
+                </li>
+              </ul>
+              <div class="square-box">
+                <div v-for="(row, rowIndex) in commonSquares[index]" :key="rowIndex" class="common-row">
+                  <div
+                      v-for="(color, colorIndex) in row"
+                      :key="colorIndex"
+                      class="common-square"
+                      :style="{ backgroundColor: color }"
                   >
+                  </div>
                 </div>
               </div>
-            </li>
-          </ul>
-          <div v-show="isOpenList[index]" class="square-box">
-            <div v-for="(row, rowIndex) in commonSquares[index]" :key="rowIndex" class="common-row">
-              <div
-                  v-for="(color, colorIndex) in row"
-                  :key="colorIndex"
-                  class="common-square"
-                  :style="{ backgroundColor: color }"
-              >
-              </div>
+              <button
+                  class="shuffle-button"
+                  @click="mixSquares(index)">
+                {{ isMixed[index] ? 'Unshuffle' : 'Shuffle' }}
+              </button>
             </div>
-          </div>
-          <button
-              class="shuffle-button"
-              v-show="isOpenList[index]"
-              @click="mixSquares(index)">
-            {{ isMixed[index] ? 'Unshuffle' : 'Shuffle' }}
-          </button>
+          </Transition>
         </div>
       </li>
     </ul>
@@ -132,27 +136,33 @@ export default {
     initOpenList() {
       this.isOpenList = this.buttonsNames.map(() => false);
     },
+
     initCheckedButtons() {
       this.checkedButtons = this.buttonsNames.map(() => false);
     },
+
     initCheckedItems() {
       this.checkedItems = this.buttonsNames.map(() =>
           this.items.map(() => false)
       );
     },
+
     initItemColors() {
       this.itemColors = this.buttonsNames.map(() =>
           this.items.map(() => '#ffffff')
       );
     },
+
     initIsMixed() {
       this.isMixed = this.buttonsNames.map(() => false);
     },
+
     initSquareCounts() {
       this.squareCounts = this.buttonsNames.map(() =>
           this.items.map(() => 3)
       );
     },
+
     initCommonSquares() {
       this.commonSquares = this.buttonsNames.map((_, listIndex) =>
           this.items.map((_, itemIndex) =>
@@ -173,10 +183,12 @@ export default {
           i === index ? !val : val
       );
     },
+
     toggleAllItems(index) {
       const isChecked = this.checkedButtons[index];
       this.checkedItems[index] = this.items.map(() => isChecked);
     },
+
     updateSquareCount(index, itemIndex) {
       this.squareCounts[index][itemIndex] = Math.min(
           10,
@@ -184,6 +196,7 @@ export default {
       );
       this.updateCommonSquares(index);
     },
+
     updateCommonSquares(index) {
       this.$nextTick(() => {
         const newSquares = this.items.map((_, itemIndex) => {
@@ -193,11 +206,11 @@ export default {
           return Array(this.squareCounts[index][itemIndex] || 3)
               .fill(this.itemColors[index][itemIndex]);
         });
-
         this.$set(this.commonSquares, index, newSquares);
         this.$set(this.originalSquares, index, newSquares);
       });
     },
+
     mixSquares(index) {
       if (!this.isMixed[index]) {
         if (!this.originalSquares) this.originalSquares = [...this.commonSquares];
@@ -205,7 +218,6 @@ export default {
         this.$set(this.commonSquares, index, [mixed]);
       } else {
         this.$set(this.commonSquares, index, [...this.originalSquares[index]]);
-
       }
       this.$set(this.isMixed, index, !this.isMixed[index]);
     }
@@ -221,17 +233,71 @@ export default {
 
 button {
   padding: 8px 16px;
-  background: #ffc617;
+  background: #f882ff;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   margin-bottom: 5px;
+  box-shadow: 0 0 5px rgba(171, 171, 171, 0.8);
+}
+
+button:active {
+  box-shadow: inset 2px 2px 3px rgba(171, 171, 171, 0.8);
+}
+
+button:hover,
+button:focus-visible {
+  background-color: #ef5af8;
 }
 
 ul {
   list-style-type: none;
   padding: 0;
+}
+
+.wrapper:not(.shown) {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  visibility: hidden;
+}
+
+.wrapper.shown {
+  max-height: 500px;
+  opacity: 1;
+  visibility: visible;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+
+.wrapper {
+  transition: all 0.3s ease;
+}
+
+.item-options {
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.item-options:not(.shown) {
+  max-height: 0;
+  visibility: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+
+}
+
+.item-options.shown {
+  max-height: 70px;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  visibility: visible;
+  opacity: 1;
 }
 
 li {
@@ -252,15 +318,6 @@ li {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.item-options {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 8px;
-  background: #f5f5f5;
-  border-radius: 4px;
 }
 
 .number-input {
@@ -315,10 +372,6 @@ li {
   width: 100%;
   height: 30px;
   cursor: pointer;
-}
-
-.common-row {
-  transition: all 0.5s ease;
 }
 
 .shuffle-button {
