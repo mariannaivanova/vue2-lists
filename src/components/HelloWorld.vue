@@ -12,8 +12,8 @@
           <button @click="toggleList(index)">
             {{ name }}
           </button>
-          <Transition>
-            <div :class="{'shown': isOpenList[index]}" class="wrapper">
+          <transition name="fade">
+            <div v-if="isOpenList[index]" class="wrapper">
               <ul class="nested-list">
                 <li v-for="(item, itemIndex) in items" :key="item" class="item-container">
                   <div class="item-controls">
@@ -23,26 +23,28 @@
                         v-model="checkedItems[index][itemIndex]">
                     <label :for="`checkbox-${index}-${itemIndex}`">{{ item }}</label>
                   </div>
-                  <div :class="{'shown': checkedItems[index][itemIndex]}"
-                       class="item-options">
-                    <input
-                        type="number"
-                        v-model.number="squareCounts[index][itemIndex]"
-                        placeholder="Кол-во квадратов"
-                        min="1"
-                        max="10"
-                        class="number-input"
-                        @change="updateSquareCount(index, itemIndex)"
-                    >
-                    <div class="color-panel">
+                  <transition name="fade">
+                    <div v-if="checkedItems[index][itemIndex]"
+                         class="item-options">
                       <input
-                          type="color"
-                          v-model="itemColors[index][itemIndex]"
-                          class="native-color-picker"
-                          ref="colorPicker"
+                          type="number"
+                          v-model.number="squareCounts[index][itemIndex]"
+                          placeholder="Кол-во квадратов"
+                          min="1"
+                          max="10"
+                          class="number-input"
+                          @change="updateSquareCount(index, itemIndex)"
                       >
+                      <div class="color-panel">
+                        <input
+                            type="color"
+                            v-model="itemColors[index][itemIndex]"
+                            class="native-color-picker"
+                            ref="colorPicker"
+                        >
+                      </div>
                     </div>
-                  </div>
+                  </transition>
                 </li>
               </ul>
               <div class="square-box">
@@ -62,7 +64,7 @@
                 {{ isMixed[index] ? 'Unshuffle' : 'Shuffle' }}
               </button>
             </div>
-          </Transition>
+          </transition>
         </div>
       </li>
     </ul>
@@ -255,28 +257,12 @@ ul {
   list-style-type: none;
   padding: 0;
 }
-
-.wrapper:not(.shown) {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease, opacity 0.3s ease;
-  visibility: hidden;
-}
-
-.wrapper.shown {
-  max-height: 500px;
-  opacity: 1;
-  visibility: visible;
-  transition: max-height 0.3s ease, opacity 0.3s ease;
-}
-
 .wrapper {
-  transition: all 0.3s ease;
+  transition: all 0.5s ease;
 }
 
 .item-options {
-  transition: all 0.3s ease;
+  transition: all 0.5s ease;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -285,19 +271,18 @@ ul {
   border-radius: 4px;
 }
 
-.item-options:not(.shown) {
-  max-height: 0;
-  visibility: hidden;
-  transition: max-height 0.3s ease, opacity 0.3s ease;
-  opacity: 0;
-
-}
-
-.item-options.shown {
-  max-height: 70px;
-  transition: max-height 0.3s ease, opacity 0.3s ease;
-  visibility: visible;
+.fade-enter-active,
+.fade-leave-active {
+  max-height: 500px;
   opacity: 1;
+  transition: max-height 0.5s ease, opacity 0.5s ease;
+}
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s ease, opacity 0.5s ease;
 }
 
 li {
